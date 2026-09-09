@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('country_code', 3)->default('EUR');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
