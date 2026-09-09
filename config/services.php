@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'openexchangerates' => [
+        'key' => env('OPENEXCHANGERATES_API_KEY'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
