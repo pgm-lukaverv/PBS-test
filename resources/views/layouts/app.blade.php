@@ -10,7 +10,7 @@
 
         @livewireStyles
     </head>
-    <body>
+    <body class="min-h-screen bg-gray-50 antialiased">
         {{ $slot }}
 
         @livewireScripts

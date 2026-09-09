@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* This app doesn't build a dark theme. Without this, Livewire's built-in pagination view
+   (which ships its own dark: classes) would auto-switch based on the OS/browser's color
+   scheme while the rest of our custom markup stays light — a visual mismatch. Making `dark:`
+   class-based (instead of prefers-color-scheme-based) means it simply never activates here. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
