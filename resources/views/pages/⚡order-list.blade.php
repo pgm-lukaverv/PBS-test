@@ -59,6 +59,8 @@ new class extends Component
 ?>
 
 <div>
+    {{-- wire:model.live re-runs the orders() computed property automatically on every change.
+         debounce.100ms waits briefly after typing stops before sending the request. --}}
     <input type="text" wire:model.live.debounce.100ms="search" placeholder="Search by username...">
 
     <table>
@@ -79,6 +81,7 @@ new class extends Component
                     @if ($order->amount_eur !== null)
                     {{ number_format($order->amount_eur, 2) }} EUR
                     @else
+                    {{-- Conversion failed (API/key unavailable) — fail gracefully instead of crashing. --}}
                     unavailable
                     @endif
                 </td>

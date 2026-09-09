@@ -14,6 +14,8 @@ return [
     |
     */
 
+    // Free-tier OpenExchangeRates API key. Change it here (or in .env) to rotate keys without
+    // touching any application code — the key is only ever read via config('services.openexchangerates.key').
     'openexchangerates' => [
         'key' => env('OPENEXCHANGERATES_API_KEY'),
     ],

@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            // ISO currency code for the user's local currency (EUR, USD or GBP). Orders are stored
+            // in this currency and converted to EUR on the fly for display.
             $table->string('country_code', 3)->default('EUR');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

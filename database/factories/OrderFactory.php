@@ -19,6 +19,8 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
+            // Creates a brand-new User by default; the seeder overrides this to attach
+            // orders to specific existing users instead.
             'user_id' => User::factory(),
             'amount' => fake()->randomFloat(2, 10, 2000),
             'ordered_at' => fake()->dateTimeBetween('-2 years', 'now'),
