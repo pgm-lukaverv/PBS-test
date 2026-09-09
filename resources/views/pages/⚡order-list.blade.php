@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Order;
+use App\Models\User;
 use App\Services\CurrencyConversionService;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -16,9 +17,23 @@ new class extends Component
     public string $search = '';
 
     /**
+     * How to sort the order list: 'recent' (default, most recent order first) or 'name'
+     * (by the owning user's name, A-Z).
+     */
+    public string $sortBy = 'recent';
+
+    /**
      * Reset to page 1 whenever the search term changes, so results don't get stuck on an empty later page.
      */
     public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * Reset to page 1 whenever the sort order changes too, for the same reason as the search reset.
+     */
+    public function updatingSortBy(): void
     {
         $this->resetPage();
     }
@@ -33,14 +48,21 @@ new class extends Component
     #[Computed]
     public function orders()
     {
-        $orders = Order::query()
+        $query = Order::query()
             ->with('user')
             // Only orders belonging to users whose name matches the search term.
             // Because we're querying orders (not users) directly, users with zero orders
             // are automatically excluded — satisfies "only show users with orders".
-            ->whereHas('user', fn($query) => $query->where('name', 'like', '%' . $this->search . '%'))
-            ->latest('ordered_at')
-            ->paginate(10);
+            ->whereHas('user', fn($query) => $query->where('name', 'like', '%' . $this->search . '%'));
+
+        // 'name' sorts by the related user's name. Order has no name column itself, so we order by
+        // a correlated subquery selecting it from users — Eloquent's orderBy() accepts a subquery
+        // directly for exactly this case. 'recent' (default) just sorts by order date.
+        $query = $this->sortBy === 'name'
+            ? $query->orderBy(User::select('name')->whereColumn('id', 'orders.user_id'))
+            : $query->latest('ordered_at');
+
+        $orders = $query->paginate(10);
 
         // Attach the live EUR conversion to each order. This is a derived value, not stored data,
         // so it's computed here at render time rather than persisted on the model.
@@ -62,16 +84,36 @@ new class extends Component
     <h1 class="text-2xl font-semibold text-gray-900">Orders</h1>
     <p class="mt-1 text-sm text-gray-500">Search by username to filter orders. Amounts are shown in the user's original currency and converted to EUR using live exchange rates.</p>
 
-    {{-- wire:model.live re-runs the orders() computed property automatically on every change.
-         debounce.100ms waits briefly after typing stops before sending the request. --}}
-    <input
-        type="text"
-        wire:model.live.debounce.100ms="search"
-        placeholder="Search by username..."
-        class="mt-6 block w-full max-w-sm rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
-    >
+    <div class="mt-6 flex flex-wrap items-end gap-4">
+        {{-- wire:model.live re-runs the orders() computed property automatically on every change.
+             debounce.100ms waits briefly after typing stops before sending the request. --}}
+        <div class="flex-1 min-w-[16rem] max-w-sm">
+            <label for="search" class="mb-1 block text-sm font-medium text-gray-700">Search</label>
+            <input
+                id="search"
+                type="text"
+                wire:model.live.debounce.100ms="search"
+                placeholder="Search by username..."
+                class="block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
+        </div>
 
-    <div class="mt-6 overflow-hidden rounded-lg shadow ring-1 ring-black/5">
+        {{-- Sort toggle: 'recent' (default) or 'name'. wire:model.live re-runs orders()
+             immediately on change, same mechanism as the search input. --}}
+        <div>
+            <label for="sortBy" class="mb-1 block text-sm font-medium text-gray-700">Sort by</label>
+            <select
+                id="sortBy"
+                wire:model.live="sortBy"
+                class="block rounded-md border-0 py-2 pl-3 pr-8 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
+                <option value="recent">Most recent</option>
+                <option value="name">Username (A-Z)</option>
+            </select>
+        </div>
+    </div>
+
+    {{-- min-h keeps the table area a constant height (header + 10 rows), so a last page with
+         fewer results doesn't shrink the table and make the pagination bar jump up. --}}
+    <div class="mt-6 min-h-123 overflow-hidden rounded-lg shadow ring-1 ring-black/5">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
